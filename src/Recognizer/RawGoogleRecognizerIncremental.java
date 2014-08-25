@@ -100,8 +100,9 @@ public class RawGoogleRecognizerIncremental implements StandardRecognizer {
 				if(resultJSON.equals("{\"result\":[]}"))
 					continue;
 				Result result = new Result();
-				if(resultJSON.contains("final\":true)"))
-						result.setFinal();
+				if(resultJSON.contains("final\":true"))
+					result.setFinal();
+				
 				while (resultJSON.indexOf("transcript") != -1) {
 					
 					resultJSON = resultJSON
@@ -121,9 +122,7 @@ public class RawGoogleRecognizerIncremental implements StandardRecognizer {
 					// add to resultT
 					if (!utterance.equals(""))
 						result.addResult(utterance);
-					if(!result.isFinal())
-						break;
-					
+
 				}
 				resultQueue.add(result);
 				//result.printShort();
