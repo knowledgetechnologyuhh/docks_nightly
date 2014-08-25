@@ -35,8 +35,10 @@ import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.security.SecureRandom;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Scanner;
 
 import javaFlacEncoder.FLACFileWriter;
@@ -72,6 +74,21 @@ public class RawGoogleRecognizerIncremental implements StandardRecognizer {
 			e.printStackTrace();
 			return null;
 		}
+//		Scanner s;
+//		try {
+//			if (connection.getResponseCode() != 200) {
+//			    s = new Scanner(connection.getErrorStream());
+//			} else {
+//			    s = new Scanner(connection.getInputStream());
+//			}
+//
+//		s.useDelimiter("\\Z");
+//		String response = s.next();
+//		System.out.println(response);
+//		} catch (IOException e1) {
+//			// TODO Auto-generated catch block
+//			e1.printStackTrace();
+//		}
 		String decodedString = "";
 		String resultJSON = null;
 		Printer.printWithTime(TAG, "decoding string");
@@ -80,60 +97,50 @@ public class RawGoogleRecognizerIncremental implements StandardRecognizer {
 			while ((decodedString = in.readLine()) != null) {
 				Printer.printWithTime(TAG, decodedString);
 				resultJSON = decodedString;
+				if(resultJSON.equals("{\"result\":[]}"))
+					continue;
+				Result result = new Result();
+				if(resultJSON.contains("final\":true)"))
+						result.setFinal();
+				while (resultJSON.indexOf("transcript") != -1) {
+					
+					resultJSON = resultJSON
+							.substring(resultJSON.indexOf("transcript") + 13);
+					String utterance;
+					// clean from special chars
+					utterance = resultJSON.substring(0, resultJSON.indexOf("\""));
+					utterance = utterance.replace("@", "");
+
+					utterance = utterance.replaceAll("[^a-zA-Z 0-9]", "");
+					utterance = utterance.replaceAll(" +", " ");
+
+					if (!utterance.equals(""))
+						if (utterance.charAt(0) == ' ')
+							utterance = utterance.substring(1);
+
+					// add to resultT
+					if (!utterance.equals(""))
+						result.addResult(utterance);
+					if(!result.isFinal())
+						break;
+					
+				}
+				resultQueue.add(result);
+				//result.printShort();
 			}
+			Result r = new Result();
+			r.setEndSignal();
+			resultQueue.add(r);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return null;
 		}
-		if (resultJSON == null) {
-			Printer.printWithTime(TAG, "no JSON result");
-			return null;
-		}
 
-		// System.out.println(resultJSON);
-		Result result = new Result();
-		String utterance;
-		String temp = resultJSON
-				.substring(resultJSON.indexOf("confidence") + 13);
-		if (resultJSON.equals("{\"result\":[]}"))
-			return null;
-		float confidence = 0;
-		try {
-			// check if there is no result (means no confidence)
-			confidence = Float.parseFloat(temp.substring(0, temp.indexOf("}")));
-		} catch (Exception e) {
-			confidence = 0;
-		}
-		result.setConfidence(confidence);
 
-		// parse JSON utterances
-		while (resultJSON.indexOf("transcript") != -1) {
 
-			resultJSON = resultJSON
-					.substring(resultJSON.indexOf("transcript") + 13);
-
-			// clean from special chars
-			utterance = resultJSON.substring(0, resultJSON.indexOf("\""));
-			utterance = utterance.replace("@", "");
-
-			utterance = utterance.replaceAll("[^a-zA-Z 0-9]", "");
-			utterance = utterance.replaceAll(" +", " ");
-
-			if (!utterance.equals(""))
-				if (utterance.charAt(0) == ' ')
-					utterance = utterance.substring(1);
-
-			// add to resultT
-			if (!utterance.equals(""))
-				result.addResult(utterance);
-
-		}
-
-		if (Printer.verbose)
-			result.print();
 		// return result
-		return result;
+		return null;
 
 	}
 
@@ -162,6 +169,17 @@ public class RawGoogleRecognizerIncremental implements StandardRecognizer {
 
 	}
 
+	private Queue<Result> resultQueue = new LinkedList<Result>();
+	public Result getNextPartialResult()
+	{
+		Printer.printWithTime(TAG, "trying to get result from queue");
+		Result res = resultQueue.peek();
+		while(res==null)
+			res=resultQueue.peek();
+		resultQueue.poll();
+		Printer.printWithTime(TAG, "got result from queue");
+		return res;
+	}
 	// get connection to Google
 	private HttpURLConnection getUpConnection() {
 		HttpURLConnection connection = null;
@@ -205,6 +223,7 @@ public class RawGoogleRecognizerIncremental implements StandardRecognizer {
 		}
 		connection.setRequestProperty("Transfer-Encoding",
 				"chunked");
+		connection.setChunkedStreamingMode(0);
 		connection.setRequestProperty("Content-Type",
 				"audio/x-flac; rate=16000");
 		connection
@@ -261,23 +280,23 @@ public class RawGoogleRecognizerIncremental implements StandardRecognizer {
 				.setRequestProperty(
 						"User-Agent",
 						"Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2049.0 Safari/537.36");
-		//connection.setConnectTimeout(60000);
+		connection.setConnectTimeout(60000);
 		//connection.setUseCaches(false);
-		Scanner s;
-		try {
-			if (connection.getResponseCode() != 200) {
-			    s = new Scanner(connection.getErrorStream());
-			} else {
-			    s = new Scanner(connection.getInputStream());
-			}
-
-		s.useDelimiter("\\Z");
-		String response = s.next();
-		System.out.println(response);
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
+//		Scanner s;
+//		try {
+//			if (connection.getResponseCode() != 200) {
+//			    s = new Scanner(connection.getErrorStream());
+//			} else {
+//			    s = new Scanner(connection.getInputStream());
+//			}
+//
+//		s.useDelimiter("\\Z");
+//		String response = s.next();
+//		System.out.println(response);
+//		} catch (IOException e1) {
+//			// TODO Auto-generated catch block
+//			e1.printStackTrace();
+//		}
 		return connection;
 
 	}
@@ -337,6 +356,7 @@ public class RawGoogleRecognizerIncremental implements StandardRecognizer {
 						+ boas.toByteArray());
 				Printer.printWithTimeF(TAG, "writing data");
 				try {
+					Printer.printWithTime(TAG, "writing "+boas.toByteArray().length+" bytes");
 					stream.write(boas.toByteArray());// write FLAC audio data to
 														// the output stream to
 														// google
@@ -405,6 +425,23 @@ public class RawGoogleRecognizerIncremental implements StandardRecognizer {
 		return res;
 	}
 
+	private void startDownConnection()
+	{
+		Thread t = new Thread(){
+			public void run() {
+				HttpURLConnection downCon = getDownConnection();
+				Result res = getResult(downCon);
+				downCon.disconnect();
+			}
+			
+		};
+		t.start();
+
+		
+	}
+	
+	private final static byte[] FINAL_CHUNK = new byte[] { '0', '\r', '\n', '\r', '\n' };
+	
 	/**
 	 * recognize from an audio file (16kHz, 1 channel, signed, little endian)
 	 * 
@@ -415,11 +452,12 @@ public class RawGoogleRecognizerIncremental implements StandardRecognizer {
 
 		// open connection to google
 		HttpURLConnection upCon = getUpConnection();
-		//HttpURLConnection downCon = getDownConnection();
+
 
 		// get stream from connection
 		DataOutputStream stream = getStream(upCon);
-
+		startDownConnection();
+		
 		File file = new File(fileName);
 
 		FLACFileWriter ffw = new FLACFileWriter();
@@ -430,9 +468,11 @@ public class RawGoogleRecognizerIncremental implements StandardRecognizer {
 					.getAudioInputStream(file);
 			ByteArrayOutputStream boas = new ByteArrayOutputStream();
 			ffw.write(inputStream, FLACFileWriter.FLAC, boas);
-
+			Printer.printWithTime(TAG, "writing to stream");
 			// write FLAC to stream
 			stream.write(boas.toByteArray());
+			stream.write(FINAL_CHUNK);
+			Printer.printWithTime(TAG, "written to stream");
 
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
@@ -441,9 +481,12 @@ public class RawGoogleRecognizerIncremental implements StandardRecognizer {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+
+		
 		// get result
-		//Result res = getResult(downCon);
-		Result res = getResult(upCon);
+		
+		//Result res = getResult(upCon);
 		
 		// flush and close stream
 		try {
@@ -463,11 +506,11 @@ public class RawGoogleRecognizerIncremental implements StandardRecognizer {
 
 		// disconnect from google
 		upCon.disconnect();
-		//downCon.disconnect();
+		
 
 		Printer.printWithTime(TAG, "Done");
 		// res.print();
-		return res;
+		return null;
 	}
 
 	@Override

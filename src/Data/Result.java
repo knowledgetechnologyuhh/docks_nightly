@@ -48,6 +48,26 @@ public class Result implements Serializable {
 	
 	private String hypPhoneme;
 	private String refPhoneme;
+	private boolean isFinal=false;
+	private boolean isEndSignal = false;
+	public boolean isFinal()
+	{
+		return isFinal;
+	}
+	
+	public void setFinal()
+	{
+		isFinal=true;
+	}
+	public boolean isEndSignal()
+	{
+		return isEndSignal;
+	}
+	
+	public void setEndSignal()
+	{
+		isEndSignal=true;
+	}
 	
 	/**
 	 * 
@@ -146,6 +166,12 @@ public class Result implements Serializable {
 		}
 		System.out.println("= = = = = = = = =");
 		System.out.println("");
+	}
+	public void printShort() {
+		System.out.print("Result:");
+		for (String s : resultList)
+			System.out.print(s+" ; ");
+		System.out.println();
 	}
 
 	/**

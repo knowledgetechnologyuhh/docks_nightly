@@ -24,6 +24,7 @@ import java.io.Console;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.net.HttpURLConnection;
 import java.security.SecureRandom;
 
 import javax.sound.sampled.AudioFormat;
@@ -50,9 +51,9 @@ import Recognizer.SphinxRecognizer;
 import Utils.ExampleChooser;
 import Utils.Printer;
 
-
 /**
  * Class showing different examples of usage
+ * 
  * @author 7twiefel
  * 
  */
@@ -209,7 +210,7 @@ class Example {
 		// this is the config name. it is used as prefix for all configuration
 		// file like wtm_experiment.sentences.txt
 
-		//String configname = "wtm_experiment";
+		// String configname = "wtm_experiment";
 		String configname = "config/elpmaxe/elpmaxe";
 
 		// initialize some recognizers
@@ -218,7 +219,7 @@ class Example {
 
 		System.out.println("Starting Google+Sentencelist");
 		SentencelistPostProcessor sentencelist = new SentencelistPostProcessor(
-				configname + ".sentences", 1,key);
+				configname + ".sentences", 1, key);
 
 		System.out.println("Starting Sphinx N-Gram");
 		SphinxRecognizer sphinxNGram = new SphinxRecognizer(configname
@@ -243,7 +244,7 @@ class Example {
 
 		System.out.println("Starting Google+Wordlist");
 		WordlistPostProcessor wordlist = new WordlistPostProcessor(configname
-				+ ".words",key);
+				+ ".words", key);
 
 		// a testfile
 		String filename = "data/back_fs_1387386033021_m1.wav";
@@ -252,8 +253,8 @@ class Example {
 		// play sound before recognition
 		playSound(filename);
 		// recognize
-		testFile(filename, sentence, rawGoogle, sentencelist,
-				sphinxNGram, sphinxSentences, sphinxPostProcessorBigram,
+		testFile(filename, sentence, rawGoogle, sentencelist, sphinxNGram,
+				sphinxSentences, sphinxPostProcessorBigram,
 				sphinxPostProcessorUnigram, sphinxPostProcessorSentences,
 				wordlist);
 
@@ -262,8 +263,8 @@ class Example {
 		filename = "data/front_fs_1387379085134_m1.wav";
 		sentence = "the door is in front of you";
 		playSound(filename);
-		testFile(filename, sentence, rawGoogle, sentencelist,
-				sphinxNGram, sphinxSentences, sphinxPostProcessorBigram,
+		testFile(filename, sentence, rawGoogle, sentencelist, sphinxNGram,
+				sphinxSentences, sphinxPostProcessorBigram,
 				sphinxPostProcessorUnigram, sphinxPostProcessorSentences,
 				wordlist);
 		waitForEnter();
@@ -271,8 +272,8 @@ class Example {
 
 		sentence = "the kitchen is at home";
 		playSound(filename);
-		testFile(filename, sentence, rawGoogle, sentencelist,
-				sphinxNGram, sphinxSentences, sphinxPostProcessorBigram,
+		testFile(filename, sentence, rawGoogle, sentencelist, sphinxNGram,
+				sphinxSentences, sphinxPostProcessorBigram,
 				sphinxPostProcessorUnigram, sphinxPostProcessorSentences,
 				wordlist);
 		waitForEnter();
@@ -280,8 +281,8 @@ class Example {
 		filename = "data/show_fs_1387385878857_m1.wav";
 		sentence = "robot show me the pen";
 		playSound(filename);
-		testFile(filename, sentence, rawGoogle, sentencelist,
-				sphinxNGram, sphinxSentences, sphinxPostProcessorBigram,
+		testFile(filename, sentence, rawGoogle, sentencelist, sphinxNGram,
+				sphinxSentences, sphinxPostProcessorBigram,
 				sphinxPostProcessorUnigram, sphinxPostProcessorSentences,
 				wordlist);
 	}
@@ -298,11 +299,11 @@ class Example {
 		// load sentencelist postprocessor
 		System.out.println("Starting Google+Sentencelist");
 		SentencelistPostProcessor sentencelist = new SentencelistPostProcessor(
-				configname + ".sentences", 1,key);
+				configname + ".sentences", 1, key);
 
 		Result r;
 		// load example chooser
-		ExampleChooser ec = new ExampleChooser(configname+".sentences");
+		ExampleChooser ec = new ExampleChooser(configname + ".sentences");
 
 		// load voice activity detection
 		VoiceActivityDetector vac = new VoiceActivityDetector(
@@ -337,8 +338,6 @@ class Example {
 		}
 	}
 
-
-
 	public static String join(String[] strings, String delimiter) {
 		if (strings == null || strings.length == 0)
 			return "";
@@ -349,32 +348,46 @@ class Example {
 		return builder.toString();
 	}
 
-
 	public static void main(String[] args) {
 		// set verbose to false
-		 Printer.verbose = true;
-		
-		 //uncomment this to create a new configuration from a batch file
-		 //ConfigCreator.createConfig("elpmaxe", "./batch");
-		 
-		 //put your Google key here
-		 //String key = "yourkeyhere"; 
-		 String key = "AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw";
-		 RawGoogleRecognizerIncremental rgri = new RawGoogleRecognizerIncremental(key); 
-		 String filename = "data/front_fs_1387379085134_m1.wav";
-		 //String filename = "data/back_fs_1387386033021_m1.wav";
-		 Result r = rgri.recognizeFromFile(filename);
-		 //r.print();
-		 //RawGoogleRecognizer rgr = new RawGoogleRecognizer(key); 
-		 //r = rgr.recognizeFromFile(filename);
-		 //r.print();
-		 //starts the simulation example
-		 //exampleSimulation(key);
-		 
+		Printer.verbose = true;
+
+		// uncomment this to create a new configuration from a batch file
+		// ConfigCreator.createConfig("elpmaxe", "./batch");
+
+		// put your Google key here
+		// String key = "yourkeyhere";
+		String key = "AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw";
+		final RawGoogleRecognizerIncremental rgri = new RawGoogleRecognizerIncremental(
+				key);
+		String filename = "data/front_fs_1387379085134_m1.wav";
+		// String filename = "data/back_fs_1387386033021_m1.wav";
+		Thread t = new Thread() {
+			public void run() {
+				while (true) {
+					Result r = rgri.getNextPartialResult();
+					if(r.isEndSignal())
+						break;
+					r.printShort();
+					
+				}
+
+			}
+
+		};
+		t.start();
+		rgri.recognizeFromFile(filename);
+
+
+		// r.print();
+		// RawGoogleRecognizer rgr = new RawGoogleRecognizer(key);
+		// r = rgr.recognizeFromFile(filename);
+		// r.print();
+		// starts the simulation example
+		// exampleSimulation(key);
+
 		// starts the live recognition example
-		 //exampleLive(key);
-
-
+		// exampleLive(key);
 
 	}
 }
