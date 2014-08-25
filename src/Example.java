@@ -365,8 +365,8 @@ class Example {
 		 //String filename = "data/back_fs_1387386033021_m1.wav";
 		 Result r = rgri.recognizeFromFile(filename);
 		 //r.print();
-		 RawGoogleRecognizer rgr = new RawGoogleRecognizer(key); 
-		 r = rgr.recognizeFromFile(filename);
+		 //RawGoogleRecognizer rgr = new RawGoogleRecognizer(key); 
+		 //r = rgr.recognizeFromFile(filename);
 		 //r.print();
 		 //starts the simulation example
 		 //exampleSimulation(key);
